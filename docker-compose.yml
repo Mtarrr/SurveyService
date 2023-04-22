@@ -1,0 +1,28 @@
+version: "3.1"
+services:
+  survey-service:
+    container_name: SurveyService
+    build: ./
+    depends_on:
+      - database
+    ports:
+      - "8090:8080"
+  database:
+    image: postgres
+    container_name: PostgreSQL
+    restart: on-failure
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - /var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+  mailSender:
+    image: maildev/maildev
+    container_name: MailDev
+    restart: on-failure
+    ports:
+      - "1080:1080"
+      - "1025:1025"
