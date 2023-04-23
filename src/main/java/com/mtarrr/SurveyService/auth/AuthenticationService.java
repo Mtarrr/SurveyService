@@ -5,6 +5,7 @@ import com.mtarrr.SurveyService.config.JwtService;
 import com.mtarrr.SurveyService.email.EmailSender;
 import com.mtarrr.SurveyService.email.EmailToken;
 import com.mtarrr.SurveyService.email.EmailTokenService;
+import com.mtarrr.SurveyService.exception.*;
 import com.mtarrr.SurveyService.token.Token;
 import com.mtarrr.SurveyService.token.TokenRepository;
 import com.mtarrr.SurveyService.token.TokenType;
@@ -44,7 +45,7 @@ public class AuthenticationService {
     private final JwtService jwtService;
     private final UserValidator userValidator;
     private final AuthenticationManager authenticationManager;
-
+    //получение пользователя из запроса, валидация и отправка письма на подтвреждение почты
     public AuthenticationResponse register(RegisterRequest request) {
         log.info(request.toString());
         var user = User.builder()
@@ -62,7 +63,7 @@ public class AuthenticationService {
         var token = signUpUser(user);
         var link = "http://localhost:8080/survey-service/auth/confirm?token=" + token;
 
-        emailSender.send(request.getEmail(), buildEmail(request.getFirstname(), link));
+        emailSender.send(user.getEmail(), buildEmail(user.getFirstname(), link));
         var jwtToken = jwtService.generateToken(user);
         var refreshToken = jwtService.generateRefreshToken(user);
         saveUserToken(user, jwtToken);
@@ -71,7 +72,7 @@ public class AuthenticationService {
                 .refreshToken(refreshToken)
                 .build();
     }
-
+    //регистрация админа
     public AuthenticationResponse registerAdmin(RegisterRequest request) {
         log.info(request.toString());
         var user = User.builder()
@@ -95,12 +96,12 @@ public class AuthenticationService {
                 .refreshToken(refreshToken)
                 .build();
     }
-
+    //регистрация пользователя
     public String signUpUser(User user) {
         boolean userExists = userRepository.findByEmail(user.getEmail()).isPresent();
         if (userExists) {
             log.info("User with email {} already exists", user.getEmail());
-            throw new IllegalStateException("email already taken");
+            throw new UserExistException(user.getEmail());
         }
         if (userValidator.testUser(user)) {
             userRepository.save(user);
@@ -119,28 +120,27 @@ public class AuthenticationService {
         log.info(String.format(USER_CREATED_LOG, user.getEmail(), token));
         return token;
     }
-
+    //обновление доступности пользователя после подтверждения почты
     public String enableUser(String email) {
         userRepository.enableAppUser(email);
         log.info(String.format(USER_ENABLED_LOG, email));
         return String.format(USER_ENABLED_LOG, email);
     }
-
+    //подтверждение почты
     @Transactional
     public String confirmToken(String token) {
         var emailToken = emailTokenService
                 .getToken(token)
-                .orElseThrow(() ->
-                        new IllegalStateException("token not found"));
+                .orElseThrow(NoSuchToken::new);
 
         if (emailToken.getConfirmedAt() != null) {
-            throw new IllegalStateException("email already confirmed");
+            throw new AlreadyConfirmed();
         }
 
         var expiredAt = emailToken.getExpiresAt();
 
         if (expiredAt.isBefore(LocalDateTime.now())) {
-            throw new IllegalStateException("token expired");
+            throw new TokenExpired();
         }
 
         emailTokenService.setConfirmedAt(token);
@@ -149,7 +149,7 @@ public class AuthenticationService {
         return String.format(USER_CONFIRMED_LOG, emailToken.getUser().getEmail(), LocalDateTime.now());
 
     }
-
+    //аутентификация
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
@@ -168,7 +168,7 @@ public class AuthenticationService {
                 .refreshToken(refreshToken)
                 .build();
     }
-
+    //сохранение jwt токена
     private void saveUserToken(User user, String jwtToken) {
         var token = Token.builder()
                 .user(user)
@@ -179,7 +179,7 @@ public class AuthenticationService {
                 .build();
         tokenRepository.save(token);
     }
-
+    //отзыв предыдущих jwt токенов
     private void revokeAllUserTokens(User user) {
         var validUserTokens = tokenRepository.findAllValidTokenByUser(user.getId());
         if (validUserTokens.isEmpty())
@@ -190,7 +190,7 @@ public class AuthenticationService {
         });
         tokenRepository.saveAll(validUserTokens);
     }
-
+    //обновление токена
     public void refreshToken(HttpServletRequest request, HttpServletResponse response) throws IOException {
         final String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
         final String refreshToken;
@@ -215,7 +215,7 @@ public class AuthenticationService {
             }
         }
     }
-
+    //шаблон письма подтверждения почты
     private String buildEmail(String name, String link) {
         return "<div style=\"font-family:Helvetica,Arial,sans-serif;font-size:16px;margin:0;color:#0b0c0c\">\n" +
                 "\n" +

@@ -11,7 +11,11 @@ public enum ErrorCode {
     MALFORMED_JSON_REQUEST("Malformed JSON Request", "0003"),
     ENTITY_NOT_FOUND("Entity not found", "0004"),
     SURVEY_VALIDATION("Incorrect survey form. ", "0005"),
-    USER_VALIDATION("Incorrect user form. ", "0005");
+    USER_VALIDATION("Incorrect user form. ", "0006"),
+    USER_EXIST("User already exist. Email: ", "0007"),
+    NO_SUCH_TOKEN("No such token", "0008"),
+    ALREADY_CONFIRMED("Email already confirmed", "0009"),
+    TOKEN_EXPIRED("Token expired", "0010");
 
     public String getMessage() {
         return message;

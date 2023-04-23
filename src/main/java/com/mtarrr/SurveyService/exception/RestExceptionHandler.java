@@ -18,7 +18,6 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(new ApiError(ErrorCode.UNEXPECTED_ERROR.getMessage(), ErrorCode.UNEXPECTED_ERROR.getCode()),
                 HttpStatus.INTERNAL_SERVER_ERROR);
     }
-
     @Override
     protected ResponseEntity<Object> handleNoHandlerFoundException(NoHandlerFoundException ex, HttpHeaders headers,
                                                                    HttpStatus status, WebRequest request) {
@@ -50,4 +49,24 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
                 HttpStatus.SERVICE_UNAVAILABLE);
     }
 
+    @ExceptionHandler(UserExistException.class)
+    protected ResponseEntity<Object> handleUserExistEx(UserExistException e) {
+        return new ResponseEntity<>(new ApiError(ErrorCode.USER_EXIST.getMessage() + e.getMessage(), ErrorCode.USER_EXIST.getCode()),
+                HttpStatus.SERVICE_UNAVAILABLE);
+    }
+    @ExceptionHandler(NoSuchToken.class)
+    protected ResponseEntity<Object> handleNoSuchTokenEx() {
+        return new ResponseEntity<>(new ApiError(ErrorCode.NO_SUCH_TOKEN.getMessage(), ErrorCode.NO_SUCH_TOKEN.getCode()),
+                HttpStatus.SERVICE_UNAVAILABLE);
+    }
+    @ExceptionHandler(AlreadyConfirmed.class)
+    protected ResponseEntity<Object> handleAlreadyConfirmedEx() {
+        return new ResponseEntity<>(new ApiError(ErrorCode.ALREADY_CONFIRMED.getMessage(), ErrorCode.ALREADY_CONFIRMED.getCode()),
+                HttpStatus.SERVICE_UNAVAILABLE);
+    }
+    @ExceptionHandler(TokenExpired.class)
+    protected ResponseEntity<Object> handleTokenExpiredEx() {
+        return new ResponseEntity<>(new ApiError(ErrorCode.TOKEN_EXPIRED.getMessage(), ErrorCode.TOKEN_EXPIRED.getCode()),
+                HttpStatus.SERVICE_UNAVAILABLE);
+    }
 }
