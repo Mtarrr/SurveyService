@@ -1,6 +1,8 @@
 package com.mtarrr.SurveyService.config;
 
-import com.mtarrr.SurveyService.token.TokenRepository;
+import com.mtarrr.SurveyService.repository.TokenRepository;
+import com.mtarrr.SurveyService.service.JwtService;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
